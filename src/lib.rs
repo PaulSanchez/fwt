@@ -63,7 +63,6 @@ where
         panic!("hadamard: vector length must be a power of 2")
     }
     let mut lag = 1;
-    let length = v.len();
     while lag < length {
         let offset = lag << 1;
         let ngroups = length / offset;
@@ -94,7 +93,7 @@ where
     T: Copy,
     f64: From<T>
 {
-    let length : usize = v.len(); //.try_into().unwrap();
+    let length : usize = v.len();
     let result : Vec<f64> =
         v.iter().map(|x|
             <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64)
@@ -106,12 +105,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    //    #[test]
-    //    fn it_works() {
-    //        let result = add(2, 2);
-    //        assert_eq!(result, 4);
-    //    }
 
     #[test]
     fn test_hadamard() {
