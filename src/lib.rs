@@ -1,14 +1,14 @@
-// Implementation of Fast Walsh Transforms (FWTs) using sequency and
-// Hadamard in-place transforms.  Both algorithms are O(n log(n)).
-//
-// Note that these transforms are their own inverse, to within a scale
-// factor of vector.length, because the transform matrix is orthogonal and
-// symmetric about its diagonal.
+//! Implementation of Fast Walsh Transforms (FWTs) using sequency and
+//! Hadamard in-place transforms.  Both algorithms are O(n log(n)).
+//!
+//! Note that these transforms are their own inverse, to within a scale
+//! factor of vector.length, because the transform matrix is orthogonal and
+//! symmetric about its diagonal.
 
 use std::ops::Add;
 use std::ops::Sub;
 
-// Perform a fast Walsh transformation using Manz sequency ordering.
+/// Perform a fast Walsh transformation using Manz sequency ordering.
 pub fn sequency<T>(input_v: &[T]) -> Option<Vec<T>>
 where
     T: Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>,
@@ -52,7 +52,7 @@ where
     }
 }
 
-// Perform a fast Walsh transformation using Hadamard (natural) ordering.
+/// Perform a fast Walsh transformation using Hadamard (natural) ordering.
 pub fn hadamard<T>(input_v: &[T]) -> Option<Vec<T>>
 where
     T: Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>,
@@ -79,8 +79,8 @@ where
     }
 }
 
-// Boolean test of whether an Integer is a pure power of two.
-// This is an O(1) algorithm.
+/// Boolean test of whether an Integer is a pure power of two.
+/// This is an O(1) algorithm.
 pub fn power_of_2(n: usize) -> bool {
     match n {
         0 => false,
@@ -88,18 +88,16 @@ pub fn power_of_2(n: usize) -> bool {
     }
 }
 
-// Scale a vector by its length
+/// Scale a vector by its length
 pub fn scale<T>(v: &[T]) -> Vec<f64>
 where
     T: Copy,
     f64: From<T>,
 {
     let length: usize = v.len();
-    let result: Vec<f64> = v
-        .iter()
-        .map(|x| <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64))
-        .collect();
-    result
+    v.iter()
+     .map(|x| <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64))
+     .collect()
 }
 
 #[cfg(test)]
