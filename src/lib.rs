@@ -9,72 +9,74 @@ use std::ops::Add;
 use std::ops::Sub;
 
 // Perform a fast Walsh transformation using Manz sequency ordering.
-pub fn sequency<T>(input_v : &[T]) -> Vec<T>
+pub fn sequency<T>(input_v: &[T]) -> Option<Vec<T>>
 where
-     T : Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>
+    T: Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>,
 {
     let length = input_v.len();
     let mut v = input_v.to_vec();
 
-    if !power_of_2(length.try_into().unwrap()) {
-        panic!("sequency: vector length must be a power of 2")
-    }
-    let mut j = 0;
-    for i in 0..(length - 2) {
-        if i < j {
-            (v[i], v[j]) = (v[j], v[i]);
+    if power_of_2(length.try_into().unwrap()) {
+        let mut j = 0;
+        for i in 0..(length - 2) {
+            if i < j {
+                (v[i], v[j]) = (v[j], v[i]);
+            }
+            let mut k = length >> 1;
+            while k <= j {
+                j -= k;
+                k >>= 1;
+            }
+            j += k;
         }
-        let mut k = length >> 1;
-        while k <= j {
-            j -= k;
-            k >>= 1;
-        }
-        j += k;
-    }
-    let mut offset = length;
-    while offset > 1 {
-        let lag = offset >> 1;
-        let ngroups = length / offset;
-        for group in 0..ngroups {
-            for i in 0..lag {
-                j = i + group * offset;
-                let k = j + lag;
-                if group & 1 == 1 {
-                    (v[j], v[k]) = (v[j] - v[k], v[j] + v[k]);
-                } else {
-                    (v[j], v[k]) = (v[j] + v[k], v[j] - v[k]);
+        let mut offset = length;
+        while offset > 1 {
+            let lag = offset >> 1;
+            let ngroups = length / offset;
+            for group in 0..ngroups {
+                for i in 0..lag {
+                    j = i + group * offset;
+                    let k = j + lag;
+                    if group & 1 == 1 {
+                        (v[j], v[k]) = (v[j] - v[k], v[j] + v[k]);
+                    } else {
+                        (v[j], v[k]) = (v[j] + v[k], v[j] - v[k]);
+                    }
                 }
             }
+            offset = lag;
         }
-        offset = lag;
+        Some(v)
+    } else {
+        None
     }
-    v
 }
 
 // Perform a fast Walsh transformation using Hadamard (natural) ordering.
-pub fn hadamard<T>(input_v : &[T]) -> Vec<T>
+pub fn hadamard<T>(input_v: &[T]) -> Option<Vec<T>>
 where
-     T : Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>
+    T: Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>,
 {
     let length = input_v.len();
     let mut v = input_v.to_vec();
-    if !power_of_2(length.try_into().unwrap()) {
-        panic!("hadamard: vector length must be a power of 2")
-    }
-    let mut lag = 1;
-    while lag < length {
-        let offset = lag << 1;
-        let ngroups = length / offset;
-        for group in 0..ngroups {
-            for base in 0..lag {
-                let j = base + group * offset;
-                let k = j + lag;
-                (v[j], v[k]) = (v[j] + v[k], v[j] - v[k]);
+    if power_of_2(length.try_into().unwrap()) {
+        let mut lag = 1;
+        while lag < length {
+            let offset = lag << 1;
+            let ngroups = length / offset;
+            for group in 0..ngroups {
+                for base in 0..lag {
+                    let j = base + group * offset;
+                    let k = j + lag;
+                    (v[j], v[k]) = (v[j] + v[k], v[j] - v[k]);
+                }
             }
+            lag = offset;
         }
-        lag = offset;
+        Some(v)
+    } else {
+        None
     }
-    v
 }
 
 // Boolean test of whether an Integer is a pure power of two.
@@ -90,16 +92,15 @@ pub fn power_of_2(n: usize) -> bool {
 pub fn scale<T>(v: &[T]) -> Vec<f64>
 where
     T: Copy,
-    f64: From<T>
+    f64: From<T>,
 {
-    let length : usize = v.len();
-    let result : Vec<f64> =
-        v.iter().map(|x|
-            <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64)
-        ).collect();
+    let length: usize = v.len();
+    let result: Vec<f64> = v
+        .iter()
+        .map(|x| <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64))
+        .collect();
     result
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -107,88 +108,86 @@ mod tests {
 
     #[test]
     fn test_hadamard() {
+        let input_v = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+        let input_v = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
+        let input_v = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]);
+        let input_v = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        let result = hadamard(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
+        let input_v = [
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.
+        ];
+        let result = hadamard(&input_v).unwrap();
         assert_eq!(
-            hadamard(&mut [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            result,
+            [
+                1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.
+            ]
         );
+        let input_v = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+        let result = hadamard(&input_v).unwrap();
         assert_eq!(
-            hadamard(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-            [1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
-            [1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]
-        );
-        assert_eq!(
-            hadamard(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0]
-        );
-        assert_eq!(
-            hadamard(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            result,
             [1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1]
         );
     }
 
     #[test]
     fn test_sequency() {
+        let input_v = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+        let input_v = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]);
+        let input_v = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]);
+        let input_v = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]);
+        let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        let result = sequency(&input_v).unwrap();
+        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
+        let input_v = [
+            0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.
+        ];
+        let result = sequency(&input_v).unwrap();
         assert_eq!(
-            sequency(&mut [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            result,
+            [1., 1., 1., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., -1., -1., -1.]
         );
+        let input_v = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let result = sequency(&input_v).unwrap();
         assert_eq!(
-            sequency(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]),
-            [1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-            [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
-            [1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]
-        );
-        assert_eq!(
-            sequency(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
-        );
-        assert_eq!(
-            sequency(&[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            result,
             [1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1]
         );
     }
@@ -222,21 +221,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_non_power_of_2_seq() {
-        sequency(&[0.0, 0.0, 1.0]);
-    }
- 
-    // non-power-of-2 array
-    #[test]
-    #[should_panic]
-    fn test_non_power_of_2_had() {
-        hadamard(&[0.0, 0.0, 1.0]);
+        assert_eq!(sequency(&[0.0, 0.0, 1.0]), None);
     }
 
     #[test]
-    #[should_panic]
+    fn test_non_power_of_2_had() {
+        assert_eq!(hadamard(&[0.0, 0.0, 1.0]), None);
+    }
+
+    #[test]
     fn test_empty_array() {
-        sequency::<i32>(&[]);
+        let v : Vec<i32> = [].to_vec();
+        assert_eq!(sequency(&v), None);
     }
 }
