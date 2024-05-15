@@ -1,14 +1,39 @@
-//! Implementation of Fast Walsh Transforms (FWTs) using sequency and
-//! Hadamard in-place transforms.  Both algorithms are O(n log(n)).
+#![crate_name = "fwt"]
+
+//! Walsh functions are a binary (±1) alternative to the more widely known
+//! Fourier functions. They form a complete orthogonal basis for a vector
+//! space. As with the Fourier Transform, there exist Fast Walsh Transforms
+//! (FWTs) that are computationally more efficient than calculating the
+//! transformation using matrix multiplication.
 //!
-//! Note that these transforms are their own inverse, to within a scale
-//! factor of vector.length, because the transform matrix is orthogonal and
-//! symmetric about its diagonal.
+//! Walsh functions can be expressed using different index orderings. This
+//! crate provides FWT implementations for sequency and Hadamard ordering.
+//! Both algorithms are O(*n* log(*n*)), where *n* is the length of the slice
+//! to be transformed and must be a power of 2.
+//!
+//! Walsh transformations are computed solely using addition and subtraction.
+//! Consequently, the output type (float vs int) conforms to the input type.
+//!
+//! Note that these transforms are their own inverse to within a scale
+//! factor of the input slice's length.
 
 use std::ops::Add;
 use std::ops::Sub;
 
-/// Perform a fast Walsh transformation using Manz sequency ordering.
+/// Return the Manz sequency ordering transform of `input_v`, or
+/// `None` if the input length is not a power of 2.
+///
+/// # Example
+///
+/// ```
+/// let input_v = [0, 0, 0, 0, 0, 0, 1, 0];
+/// let result = fwt::sequency(&input_v).unwrap();
+/// assert_eq!(
+///     result,
+///     [1, -1, 1, -1, -1, 1, -1, 1]
+/// );
+/// assert_eq!(fwt::sequency(&[0.0, 0.0, 1.0]), None);
+/// ```
 pub fn sequency<T>(input_v: &[T]) -> Option<Vec<T>>
 where
     T: Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>,
@@ -52,7 +77,20 @@ where
     }
 }
 
-/// Perform a fast Walsh transformation using Hadamard (natural) ordering.
+/// Return the Hadamard (natural) ordering transform of `input_v`,
+/// or `None` if the input length is not a power of 2.
+///
+/// # Example
+///
+/// ```
+/// let input_v = [0, 0, 0, 0, 0, 0, 0, 1];
+/// let result = fwt::hadamard(&input_v).unwrap();
+/// assert_eq!(
+///     result,
+///     [1, -1, -1, 1, -1, 1, 1, -1]
+/// );
+/// assert_eq!(fwt::hadamard(&[0.0, 0.0, 1.0]), None);
+/// ```
 pub fn hadamard<T>(input_v: &[T]) -> Option<Vec<T>>
 where
     T: Add<Output = T> + Sub<Output = T> + Copy + std::ops::AddAssign<T>,
@@ -79,8 +117,14 @@ where
     }
 }
 
-/// Boolean test of whether an Integer is a pure power of two.
-/// This is an O(1) algorithm.
+/// Determine whether unsigned `n` is a pure power of two, in O(1) time.
+///
+/// # Example
+///
+/// ```
+/// assert!(!fwt::power_of_2(usize::MAX));
+/// assert!(fwt::power_of_2(1024));
+/// ```
 pub fn power_of_2(n: usize) -> bool {
     match n {
         0 => false,
@@ -88,7 +132,18 @@ pub fn power_of_2(n: usize) -> bool {
     }
 }
 
-/// Scale a vector by its length
+/// Scale a vector by its length. This is an appropriate scaling
+/// to yield an inversion from two calls to the same transform.
+/// Note that the result is `f64` even if the input `v` contains ints.
+///
+/// # Example
+///
+/// ```
+/// let input = vec![1., 2., 3., 4.];
+/// let outcome = fwt::hadamard(&input).unwrap();
+/// let unscaled = fwt::hadamard(&outcome).unwrap();
+/// assert_eq!(input, fwt::scale(&unscaled));
+/// ```
 pub fn scale<T>(v: &[T]) -> Vec<f64>
 where
     T: Copy,
@@ -96,8 +151,8 @@ where
 {
     let length: usize = v.len();
     v.iter()
-     .map(|x| <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64))
-     .collect()
+        .map(|x| <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64))
+        .collect()
 }
 
 #[cfg(test)]
@@ -131,14 +186,12 @@ mod tests {
         let result = hadamard(&input_v).unwrap();
         assert_eq!(result, [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
         let input_v = [
-            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.,
         ];
         let result = hadamard(&input_v).unwrap();
         assert_eq!(
             result,
-            [
-                1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.
-            ]
+            [1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.]
         );
         let input_v = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
         let result = hadamard(&input_v).unwrap();
@@ -175,7 +228,7 @@ mod tests {
         let result = sequency(&input_v).unwrap();
         assert_eq!(result, [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
         let input_v = [
-            0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.
+            0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
         ];
         let result = sequency(&input_v).unwrap();
         assert_eq!(
@@ -219,18 +272,8 @@ mod tests {
     }
 
     #[test]
-    fn test_non_power_of_2_seq() {
-        assert_eq!(sequency(&[0.0, 0.0, 1.0]), None);
-    }
-
-    #[test]
-    fn test_non_power_of_2_had() {
-        assert_eq!(hadamard(&[0.0, 0.0, 1.0]), None);
-    }
-
-    #[test]
     fn test_empty_array() {
-        let v : Vec<i32> = [].to_vec();
+        let v: Vec<i32> = [].to_vec();
         assert_eq!(sequency(&v), None);
     }
 }
