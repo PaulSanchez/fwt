@@ -30,10 +30,10 @@ use std::ops::Sub;
 ///
 /// ```
 /// let input_v = [0, 0, 0, 0, 0, 0, 1, 0];
-/// let result = fwt::sequency(&input_v).unwrap();
+/// let result = fwt::sequency(&input_v);
 /// assert_eq!(
 ///     result,
-///     [1, -1, 1, -1, -1, 1, -1, 1]
+///     Some(vec![1, -1, 1, -1, -1, 1, -1, 1])
 /// );
 /// assert_eq!(fwt::sequency(&[0.0, 0.0, 1.0]), None);
 /// ```
@@ -44,7 +44,7 @@ where
     let length = input_v.len();
     let mut v = input_v.to_vec();
 
-    if power_of_2(length.try_into().unwrap()) {
+    if power_of_2(length) {
         let mut j = 0;
         for i in 0..(length - 2) {
             if i < j {
@@ -87,10 +87,10 @@ where
 ///
 /// ```
 /// let input_v = [0, 0, 0, 0, 0, 0, 0, 1];
-/// let result = fwt::hadamard(&input_v).unwrap();
+/// let result = fwt::hadamard(&input_v);
 /// assert_eq!(
 ///     result,
-///     [1, -1, -1, 1, -1, 1, 1, -1]
+///     Some(vec![1, -1, -1, 1, -1, 1, 1, -1])
 /// );
 /// assert_eq!(fwt::hadamard(&[0.0, 0.0, 1.0]), None);
 /// ```
@@ -100,7 +100,7 @@ where
 {
     let length = input_v.len();
     let mut v = input_v.to_vec();
-    if power_of_2(length.try_into().unwrap()) {
+    if power_of_2(length) {
         let mut lag = 1;
         while lag < length {
             let offset = lag << 1;
@@ -141,21 +141,23 @@ pub fn power_of_2(n: usize) -> bool {
 ///
 /// # Example
 ///
+/// The following demonstrates that a Walsh transform is its
+/// own inverse after scaling: 
 /// ```
 /// let input = vec![1., 2., 3., 4.];
 /// let outcome = fwt::hadamard(&input).unwrap();
 /// let unscaled = fwt::hadamard(&outcome).unwrap();
-/// assert_eq!(input, fwt::scale(&unscaled));
+/// assert_eq!(input, fwt::scale(&unscaled).unwrap());
 /// ```
-pub fn scale<T>(v: &[T]) -> Vec<f64>
+pub fn scale<T>(v: &[T]) -> Option<Vec<f64>>
 where
     T: Copy,
     f64: From<T>,
 {
-    let length: usize = v.len();
-    v.iter()
-        .map(|x| <T as TryInto<f64>>::try_into(*x).unwrap() as f64 / (length as f64))
-        .collect()
+    let length = v.len();
+    Some(v.iter()
+        .map(|&x| (f64::from(x)) / (length as f64))
+        .collect())
 }
 
 #[cfg(test)]
@@ -165,84 +167,84 @@ mod tests {
     #[test]
     fn test_hadamard() {
         let input_v = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]));
         let input_v = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]));
         let input_v = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]));
         let input_v = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-        let result = hadamard(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
+        let result = hadamard(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]));
         let input_v = [
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.,
         ];
-        let result = hadamard(&input_v).unwrap();
+        let result = hadamard(&input_v);
         assert_eq!(
             result,
-            [1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.]
+            Some(vec![1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.])
         );
         let input_v = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-        let result = hadamard(&input_v).unwrap();
+        let result = hadamard(&input_v);
         assert_eq!(
             result,
-            [1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1]
+            Some(vec![1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1])
         );
     }
 
     #[test]
     fn test_sequency() {
         let input_v = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]));
         let input_v = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]));
         let input_v = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]));
         let input_v = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]));
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-        let result = sequency(&input_v).unwrap();
-        assert_eq!(result, [1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
+        let result = sequency(&input_v);
+        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]));
         let input_v = [
             0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
         ];
-        let result = sequency(&input_v).unwrap();
+        let result = sequency(&input_v);
         assert_eq!(
             result,
-            [1., 1., 1., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., -1., -1., -1.]
+            Some(vec![1., 1., 1., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., -1., -1., -1.])
         );
         let input_v = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let result = sequency(&input_v).unwrap();
+        let result = sequency(&input_v);
         assert_eq!(
             result,
-            [1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1]
+            Some(vec![1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1])
         );
     }
 
@@ -250,13 +252,17 @@ mod tests {
     fn test_scaling() {
         let input = vec![3, 6, 9];
         let outcome = vec![1.0, 2.0, 3.0];
-        assert_eq!(scale(&input), outcome);
+        assert_eq!(scale(&input), Some(outcome));
         let input = vec![1.0, 2.0, 3.0, 4.0];
         let outcome = vec![0.25, 0.5, 0.75, 1.0];
-        assert_eq!(scale(&input), outcome);
+        assert_eq!(scale(&input), Some(outcome));
         let input = [3, 6, 9];
         let outcome = vec![1.0, 2.0, 3.0];
-        assert_eq!(scale(&input), outcome);
+        assert_eq!(scale(&input), Some(outcome));
+        let input = vec![1., 2., 3., 4.];
+        let outcome = hadamard(&input).unwrap();
+        let unscaled = hadamard(&outcome).unwrap();
+        assert_eq!(input, scale(&unscaled).unwrap());
     }
 
     #[test]
