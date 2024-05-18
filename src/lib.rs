@@ -137,7 +137,8 @@ pub fn power_of_2(n: usize) -> bool {
 
 /// Scale a vector by its length. This is an appropriate scaling
 /// to yield an inversion from two calls to the same transform.
-/// Note that the result is `f64` even if the input `v` contains ints.
+/// Note that the result of scaling is `f64` even if the input
+/// `v` contains ints.
 ///
 /// # Example
 ///
@@ -148,6 +149,8 @@ pub fn power_of_2(n: usize) -> bool {
 /// let outcome = fwt::hadamard(&input).unwrap();
 /// let unscaled = fwt::hadamard(&outcome).unwrap();
 /// assert_eq!(input, fwt::scale(&unscaled).unwrap());
+/// let v: Vec<i32> = [].to_vec();
+/// assert_eq!(fwt::scale(&v), None);
 /// ```
 pub fn scale<T>(v: &[T]) -> Option<Vec<f64>>
 where
@@ -155,9 +158,14 @@ where
     f64: From<T>,
 {
     let length = v.len();
-    Some(v.iter()
-        .map(|&x| (f64::from(x)) / (length as f64))
-        .collect())
+    match length {
+        0 => None,
+        _ => Some(
+                v.iter()
+                    .map(|&x| f64::from(x) / (length as f64))
+                    .collect::<Vec<_>>()
+                )
+    }
 }
 
 #[cfg(test)]
@@ -252,17 +260,14 @@ mod tests {
     fn test_scaling() {
         let input = vec![3, 6, 9];
         let outcome = vec![1.0, 2.0, 3.0];
-        assert_eq!(scale(&input), Some(outcome));
+        let result = scale(&input).unwrap();
+        assert_eq!(result, outcome);
         let input = vec![1.0, 2.0, 3.0, 4.0];
         let outcome = vec![0.25, 0.5, 0.75, 1.0];
-        assert_eq!(scale(&input), Some(outcome));
+        assert_eq!(scale(&input).unwrap(), outcome);
         let input = [3, 6, 9];
         let outcome = vec![1.0, 2.0, 3.0];
-        assert_eq!(scale(&input), Some(outcome));
-        let input = vec![1., 2., 3., 4.];
-        let outcome = hadamard(&input).unwrap();
-        let unscaled = hadamard(&outcome).unwrap();
-        assert_eq!(input, scale(&unscaled).unwrap());
+        assert_eq!(scale(&input).unwrap(), outcome);
     }
 
     #[test]
