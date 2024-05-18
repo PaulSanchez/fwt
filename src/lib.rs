@@ -146,9 +146,13 @@ pub fn power_of_2(n: usize) -> bool {
 /// own inverse after scaling: 
 /// ```
 /// let input = vec![1., 2., 3., 4.];
-/// let outcome = fwt::hadamard(&input).unwrap();
-/// let unscaled = fwt::hadamard(&outcome).unwrap();
-/// assert_eq!(input, fwt::scale(&unscaled).unwrap());
+/// let outcome = fwt::hadamard(&input)
+///                     .expect("input length not a power of 2");
+/// let unscaled = fwt::hadamard(&outcome)
+///                     .expect("input length not a power of 2");
+/// let inverse_result = fwt::scale(&unscaled)
+///                          .expect("can't scale a slice with length 0");
+/// assert_eq!(input, inverse_result);
 /// let v: Vec<i32> = [].to_vec();
 /// assert_eq!(fwt::scale(&v), None);
 /// ```
@@ -175,84 +179,104 @@ mod tests {
     #[test]
     fn test_hadamard() {
         let input_v = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
         let input_v = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
         let input_v = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]);
         let input_v = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-        let result = hadamard(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]));
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
         let input_v = [
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.,
         ];
-        let result = hadamard(&input_v);
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
         assert_eq!(
             result,
-            Some(vec![1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.])
+            vec![1., -1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1., -1., -1., 1.]
         );
         let input_v = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-        let result = hadamard(&input_v);
+        let result = hadamard(&input_v)
+                         .expect("input length not a power of 2");
         assert_eq!(
             result,
-            Some(vec![1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1])
+            vec![1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1]
         );
     }
 
     #[test]
     fn test_sequency() {
         let input_v = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
         let input_v = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0]);
         let input_v = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0]);
         let input_v = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0]);
         let input_v = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-        let result = sequency(&input_v);
-        assert_eq!(result, Some(vec![1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]));
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
+        assert_eq!(result, vec![1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0]);
         let input_v = [
             0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
         ];
-        let result = sequency(&input_v);
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
         assert_eq!(
             result,
-            Some(vec![1., 1., 1., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., -1., -1., -1.])
+            vec![1., 1., 1., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., -1., -1., -1.]
         );
         let input_v = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let result = sequency(&input_v);
+        let result = sequency(&input_v)
+                         .expect("input length not a power of 2");
         assert_eq!(
             result,
-            Some(vec![1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1])
+            vec![1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1]
         );
     }
 
@@ -260,14 +284,19 @@ mod tests {
     fn test_scaling() {
         let input = vec![3, 6, 9];
         let outcome = vec![1.0, 2.0, 3.0];
-        let result = scale(&input).unwrap();
+        let result = scale(&input)
+                        .expect("can't scale a slice with length 0");
         assert_eq!(result, outcome);
         let input = vec![1.0, 2.0, 3.0, 4.0];
         let outcome = vec![0.25, 0.5, 0.75, 1.0];
-        assert_eq!(scale(&input).unwrap(), outcome);
+        let result = scale(&input)
+                        .expect("can't scale a slice with length 0");
+        assert_eq!(result, outcome);
         let input = [3, 6, 9];
         let outcome = vec![1.0, 2.0, 3.0];
-        assert_eq!(scale(&input).unwrap(), outcome);
+        let result = scale(&input)
+                        .expect("can't scale a slice with length 0");
+        assert_eq!(result, outcome);
     }
 
     #[test]
